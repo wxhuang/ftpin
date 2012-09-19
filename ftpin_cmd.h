@@ -2,6 +2,8 @@
 #define _FTPIN_CMD_H_
 
 #include "ftpin_config.h"
+
+#define CMD_CONN_TIMEOUT 300
 typedef enum
 {
 	USER = 0,

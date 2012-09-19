@@ -114,7 +114,7 @@ static void ftpin_server_task(void* pstate)
 {
 	ftpin_server_state* state = pstate;
 	ftpin_cmd_t* cmd = &(state->cmd);
-	ftpin_send_msg(state->conn_sock, "220 welcome, connection will be closed without any operation in 30 seconds.");
+	ftpin_send_msg(state->conn_sock, "220 welcome, connection will be closed without any operation in 300 seconds.");
 	while(state->is_running)
 	{
 		if(ftpin_recv_msg(state->conn_sock, cmd))
@@ -243,6 +243,7 @@ static void ftpin_cmd_stor(ftpin_server_state* state, ftpin_cmd_t* cmd){
 	}
 	char buf[1024];
 	int bytes_read;
+	int recv_size = 0;
 	int data_sock = ftpin_accept_conn(state->pasv_sock);
 	if(data_sock < 0){
 		ftpin_send_msg(state->conn_sock, "425 error data connection");
@@ -257,9 +258,11 @@ static void ftpin_cmd_stor(ftpin_server_state* state, ftpin_cmd_t* cmd){
 		bytes_read = ftpin_recv(data_sock, buf, 1023, 0);
 		if(bytes_read <= 0)
 			break;
+		recv_size += bytes_read;
 		buf[bytes_read] = 0;
-		printf("%s", buf);
+		ftpin_debug("%s", buf);
 	}while(1);
+	ftpin_debug("size == %d\n", recv_size);
 	ftpin_close(data_sock);
 	state->data_sock = -1;
 	ftpin_send_msg(state->conn_sock, "226 file send success");

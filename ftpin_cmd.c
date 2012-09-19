@@ -55,7 +55,7 @@ int ftpin_recv_msg(int sock, ftpin_cmd_t* tar)
 	int bytes_read;
 	char buf[512];
 	char* p;
-	struct timeval timeout = {30, 0};
+	struct timeval timeout = {CMD_CONN_TIMEOUT, 0};
 	fd_set set;
 	FD_ZERO(&set);
 	FD_SET(sock, &set);
