@@ -74,6 +74,7 @@ static int ftpin_create_listen_socket(int port)
 	if(ftpin_bind(sock, (struct sockaddr*)&srv_addr, sizeof(srv_addr)) < 0)
 	{
 		ftpin_debug("bind falied\n");
+		ftpin_close(sock);
 		return -2;
 	}
 	ftpin_listen(sock, 1);
