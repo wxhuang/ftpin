@@ -14,7 +14,8 @@ typedef enum
 	RETR,
 	STOR,
 	NOOP,
-	FTPIN_CMD_MAX,
+	FTPIN_CMD_UNKNOWN,
+	FTPIN_CMD_ERR_PARAM,
 }FTPIN_COMMAND;
 
 typedef struct _ftpin_cmd_t
@@ -24,7 +25,8 @@ typedef struct _ftpin_cmd_t
 }ftpin_cmd_t;
 
 int ftpin_parse_cmd(ftpin_cmd_t* cmd, char* str);
-
+int ftpin_recv_msg(int sock, ftpin_cmd_t* tar);
+int ftpin_send_msg(int sock, char* str);
 
 
 #endif
