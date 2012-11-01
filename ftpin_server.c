@@ -114,11 +114,11 @@ static void ftpin_server_task(void* pstate)
 {
 	ftpin_server_state* state = pstate;
 	ftpin_cmd_t* cmd = &(state->cmd);
-	ftpin_send_msg(state->conn_sock, "220 welcome");
+	ftpin_send_msg(state->conn_sock, "220 welcome, connection will be closed without any operation in 30 seconds.");
 	while(state->is_running)
 	{
 		if(ftpin_recv_msg(state->conn_sock, cmd))
-			continue;
+			break;
 		ftpin_response(state, cmd);
 	}
 	ftpin_close(state->conn_sock);

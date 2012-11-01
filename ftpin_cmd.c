@@ -55,11 +55,24 @@ int ftpin_recv_msg(int sock, ftpin_cmd_t* tar)
 	int bytes_read;
 	char buf[512];
 	char* p;
-	bytes_read = ftpin_recv(sock, buf, 512, 0);
-	if(bytes_read <= 0)
-		return -3;
-	p = strstr(buf, "\r\n");
-	*p = 0;
-	ftpin_debug("\nread %d bytes\nrecv: %s\n", bytes_read, buf);
-	return ftpin_parse_cmd(tar, buf);
+	struct timeval timeout = {30, 0};
+	fd_set set;
+	FD_ZERO(&set);
+	FD_SET(sock, &set);
+	if(select(sock + 1, &set, NULL, NULL, &timeout) > 0)
+	{
+		bytes_read = ftpin_recv(sock, buf, 512, 0);
+		if(bytes_read <= 0)
+			return -1;
+		p = strstr(buf, "\r\n");
+		*p = 0;
+		ftpin_debug("\nread %d bytes\nrecv: %s\n", bytes_read, buf);
+		return ftpin_parse_cmd(tar, buf);
+	}else
+	{
+		//timeout
+		ftpin_debug("timeout\n");
+		ftpin_send_msg(sock, "421 timeout.");
+		return -2;
+	}
 }
