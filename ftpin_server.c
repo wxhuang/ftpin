@@ -150,7 +150,7 @@ static void ftpin_get_host_ip(int sock, unsigned char* ip)
 
 static void ftpin_cmd_user(ftpin_server_state* state, ftpin_cmd_t* cmd){
 	ftpin_debug("%s\n", __FUNCTION__);
-	if(!strcmp(cmd->args, "user"))
+	if(!strcmp(cmd->args, "anonymous"))
 	{
 		state->is_login = 1;
 		ftpin_send_msg(state->conn_sock, "230 login");
@@ -163,6 +163,7 @@ static void ftpin_cmd_user(ftpin_server_state* state, ftpin_cmd_t* cmd){
 static void ftpin_cmd_quit(ftpin_server_state* state, ftpin_cmd_t* cmd){
 	state->is_running = 0;
 	ftpin_debug("%s\n", __FUNCTION__);
+	ftpin_send_msg(state->conn_sock, "221 bye");
 }
 
 static void ftpin_cmd_port(ftpin_server_state* state, ftpin_cmd_t* cmd){
@@ -201,7 +202,18 @@ static void ftpin_cmd_pasv(ftpin_server_state* state, ftpin_cmd_t* cmd){
 
 static void ftpin_cmd_type(ftpin_server_state* state, ftpin_cmd_t* cmd){
 	ftpin_debug("%s\n", __FUNCTION__);
-	ftpin_send_msg(state->conn_sock, "500 unsupported command");
+	if(!state->is_login){
+		ftpin_send_msg(state->conn_sock, "530 pls login");
+		return;
+	}
+	switch(cmd->args[0]){
+		case 'A':
+			ftpin_send_msg(state->conn_sock, "200 ok");
+			break;
+		default:
+			ftpin_send_msg(state->conn_sock, "504 unspported type");
+			break;
+	}
 }
 
 static void ftpin_cmd_mode(ftpin_server_state* state, ftpin_cmd_t* cmd){
