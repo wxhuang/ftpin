@@ -23,6 +23,7 @@
 #define ftpin_send(a,b,c,d) send(a,b,c,d)
 #define ftpin_recv(a,b,c,d) recv(a,b,c,d)
 #define ftpin_close(a) close(a)
+#define ftpin_getsockname(a,b,c) getsockname(a,b,c)
 
 #define ftpin_debug printf
 

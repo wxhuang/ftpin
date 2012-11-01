@@ -16,6 +16,7 @@ typedef enum
 	NOOP,
 	FTPIN_CMD_UNKNOWN,
 	FTPIN_CMD_ERR_PARAM,
+	FTPIN_CMD_STAT_NUM,
 }FTPIN_COMMAND;
 
 typedef struct _ftpin_cmd_t
