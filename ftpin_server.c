@@ -19,6 +19,7 @@ typedef struct _ftpin_server_state
 	ftpin_server_handle* hndl;
 	ftpin_cmd_t cmd;
 	char* data_buf;
+	struct sockaddr_in client_addr;
 	char cmd_buf[512];
 }ftpin_server_state;
 
@@ -173,7 +174,28 @@ static void ftpin_cmd_port(ftpin_server_state* state, ftpin_cmd_t* cmd){
 		ftpin_send_msg(state->conn_sock, "530 pls login");
 		return;
 	}
-	ftpin_send_msg(state->conn_sock, "502 pls use PASV mode instead");
+	int ip_buf[4];
+	char ip_str_buf[20];
+	int porth, portl;
+	sscanf(cmd->args, "%d,%d,%d,%d,%d,%d",
+			&ip_buf[0],
+			&ip_buf[1],
+			&ip_buf[2],
+			&ip_buf[3],
+			&porth, &portl);
+	ftpin_debug("port addr %d.%d.%d.%d:%d\n",
+					ip_buf[0],
+					ip_buf[1],
+					ip_buf[2],
+					ip_buf[3],
+					porth << 8 | portl & 0xff);
+	state->is_pasv = 0;
+	state->client_addr.sin_family = AF_INET;
+	state->client_addr.sin_port = htons((porth << 8) | (portl & 0xff));
+	sprintf(ip_str_buf, "%d.%d.%d.%d",
+			ip_buf[0], ip_buf[1], ip_buf[2], ip_buf[3]);
+	state->client_addr.sin_addr.s_addr = inet_addr(ip_str_buf);
+	ftpin_send_msg(state->conn_sock, "200 port ok");
 }
 
 static void ftpin_cmd_pasv(ftpin_server_state* state, ftpin_cmd_t* cmd){
@@ -233,25 +255,34 @@ static void ftpin_cmd_retr(ftpin_server_state* state, ftpin_cmd_t* cmd){
 }
 
 static void ftpin_cmd_stor(ftpin_server_state* state, ftpin_cmd_t* cmd){
+	char buf[1024];
+	int bytes_read;
+	int recv_size = 0;
+	int data_sock = -1;
 	ftpin_debug("%s\n", __FUNCTION__);
 	if(!state->is_login){
 		ftpin_send_msg(state->conn_sock, "530 pls login");
 		return;
 	}
 	if(!state->is_pasv){
-		ftpin_send_msg(state->conn_sock, "502 pls use pasv mode");
-		return;
+		data_sock = ftpin_socket(AF_INET, SOCK_STREAM, 0);
+		if(data_sock < 0){
+			ftpin_send_msg(state->conn_sock, "425 socket create error");
+			return;
+		}
+		if(ftpin_connect(data_sock, (struct sockaddr*)&(state->client_addr), sizeof(struct sockaddr)) < 0){
+			ftpin_send_msg(state->conn_sock, "425 connect failed");
+			ftpin_close(data_sock);
+		}
+	}else{
+		data_sock = ftpin_accept_conn(state->pasv_sock);
+		if(data_sock < 0){
+			ftpin_send_msg(state->conn_sock, "425 error data connection");
+			return;
+		}
+		ftpin_close(state->pasv_sock);
+		state->pasv_sock = -1;
 	}
-	char buf[1024];
-	int bytes_read;
-	int recv_size = 0;
-	int data_sock = ftpin_accept_conn(state->pasv_sock);
-	if(data_sock < 0){
-		ftpin_send_msg(state->conn_sock, "425 error data connection");
-		return;
-	}
-	ftpin_close(state->pasv_sock);
-	state->pasv_sock = -1;
 	state->data_sock = data_sock;
 	ftpin_send_msg(state->conn_sock, "150 data connection opened");
 	/* TODO:file processing. */
